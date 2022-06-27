@@ -101,8 +101,23 @@ const App = {
     this.showTimer();
   },
 
+  // 제출된 정답 판단 및 정답 시 클레이 전송
   submitAnswer: async function () {
+    const result = sessionStorage.getItem('result');
+    var answer = $('#answer').val();
 
+    if (answer === result) {
+      if (confirm('대단해요!! 0.1 KLAY 받기')) {
+        // 잔액 확인
+        if (await this.callContractBalance() >= 0.1) {
+          this.receiveKlay();
+        } else {
+          alert('죄송합니다. 컨트랙트의 KLAY가 다 소모되었습니다.');
+        }
+      }
+    } else {
+      alert('땡! 틀렸습니다!');
+    }
   },
 
   // 배포한 계정(owner 계정)으로 컨트랙트로 KLAY 송금
@@ -122,16 +137,16 @@ const App = {
             gas: '250000',
             value: cav.utils.toPeb(amount, "KLAY")
           })
-          .once('transactionHash', (txHash) => {
+          .then('transactionHash', (txHash) => {
             console.log(`txHash: ${txHash}`);
           })
-          .once('receipt', (receipt) => {
+          .then('receipt', (receipt) => {
             console.log(`(#${receipt.blockNumber}) `, receipt);
             spinner.stop();
             alert(amount + ' KLAY를 컨트랙트에 송금했습니다.');
             location.reload();
           })
-          .once('error', (error) => {
+          .then('error', (error) => {
             alert(error.message);
           });
         }
@@ -231,7 +246,28 @@ const App = {
   },
 
   receiveKlay: function () {
+    var sipnner = this.showSpinner();
+    const walletInstance = this.getWallet();
 
+    if (!walletInstance) return ;
+
+    agContract.methods.transfer(cav.utils.toPeb("0.1", "KLAY")).send({
+      from: walletInstance.address,
+      gas: '250000'
+    })
+    .then((receipt) => {
+      if (receipt.status) {
+        spinner.stop();
+        alert('0.1 KLAY가 ' + walletInstance.address + ' 계정으로 지급되었습니다.');
+        $('#transaction').html('');
+        $('#transaction').append(`<p><a href='https://baobab.klaytnscope.com/tx/${receipt.txHash}' target='_blank'>클레이튼 Scope에서 트랜잭션 확인<p/>`);
+        return agContract.methods.getBalance().call()
+          .then((balance) => {
+            $('#contractBalance').html('');
+            $('#contractBalance').append('<p>이벤트 잔액: ' + cav.utils.fromPeb(balance, "KLAY") + 'KLAY</p>');
+          })
+      }
+    })
   }
 };
 

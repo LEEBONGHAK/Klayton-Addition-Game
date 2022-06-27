@@ -19,6 +19,9 @@ module.exports = {
       patterns: [
         { from: "./src/index.html", to: "index.html" },
       ],
+      options: {
+        
+      }
     }),
   ],
   devServer: {
