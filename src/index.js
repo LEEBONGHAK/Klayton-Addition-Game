@@ -1,6 +1,9 @@
 // 클레이튼 블록체인과 소통할 수 있는 라이브러리
 import Caver from 'caver-js';
 
+// 대기 시간동안 보여줄 load spinner 를 위한 라이브러리
+import {Spinner} from 'spin.js';
+
 // 환경설정 변수
 // rpcURL: 어떤 클레이트 노드에 연결해서 사용할지 정의(여기에서는 baobab 테스트넷)
 const config = {
@@ -94,7 +97,9 @@ const App = {
 
   // 배포한 계정(owner 계정)으로 컨트랙트로 KLAY 송금
   deposit: async function () {
+    var spinner = this.showSpinner();
     const walletInstance = this.getWallet();  // 현재 로그인된 계정 정보 불러오기
+
     if (walletInstance) {
       // 로그인된 계정이 owner 계정인지 확인
       if (await this.callOwner() !== walletInstance.address) return;
@@ -112,6 +117,9 @@ const App = {
           })
           .once('receipt', (receipt) => {
             console.log(`(#${receipt.blockNumber}) `, receipt);
+            spinner.stop();
+            alert(amount + ' KLAY를 컨트랙트에 송금했습니다.');
+            location.reload();
           })
           .once('error', (error) => {
             alert(error.message);
@@ -127,8 +135,9 @@ const App = {
     return await agContract.methods.owner().call();
   },
 
+  // 컨트랙트의 Balance 값 불러오기
   callContractBalance: async function () {
-
+    return await agContract.methods.getBalance().call();
   },
 
   // Caver 월렛에 존재하는 현재 게정 정보 가져오기
@@ -170,7 +179,12 @@ const App = {
     $('#loginModal').modal('hide'); // 모달 닫기
     $('#login').hide();  // 로그인 버튼 없애기
     $('#logout').show();  // 로그아웃 버튼 보이기
-    $('#address').append('<br><p>내 계정 주소:' + walletInstance.address + '</p>'); // 계정 주소 보여주기
+    $('#address').append('<br><p>내 계정 주소: ' + walletInstance.address + '</p>'); // 계정 주소 보여주기
+    $('#contractBalance').append('<p>이벤트 잔액: ' + cav.utils.fromPeb(await this.callContractBalance(), "KLAY") + 'KLAY</p>'); // 컨트랙트 balance 보여주기
+    
+    if (await this.callOwner().toUpperCase() === walletInstance.address.toUpperCase()) {
+      $('#owner').show();
+    }
   },
 
   // 월렛, 세션 스토리지 클리어
@@ -184,8 +198,11 @@ const App = {
 
   },
 
+  // load spinner 보여주기
   showSpinner: function () {
-
+    var target = document.getElementById('spin');
+    // spinner instance 리턴
+    return new Spinner(opts).sip(target);
   },
 
   receiveKlay: function () {
