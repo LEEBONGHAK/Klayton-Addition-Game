@@ -47,12 +47,23 @@ const App = {
     this.auth.password = event.target.value;
   },
 
+  // 정보들을 baobab 노드에 보냈을 때 인증에 성공할 수 있는 계정인지 확인
   handleLogin: async function () {
-
+    if (this.auth.accessType === 'keystore') {
+      try {
+        // Caver 인스턴스에 accounts 멤버를 통해 decrypt 함수로 해독(keystor파일 + 비밀번호) -> decrypt 된 계정 오브젝트 -> privateKey 가져오기
+        const privateKey = cav.klay.accounts.decrypt(this.auth.keystore, this.auth.password).privateKey;
+        this.integrateWallet(privateKey);
+      } catch (e) {
+        $('#message').text('비밀번호가 일치하지 않습니다.')  // 에러 메세지
+      }
+    }
   },
 
+  // logout 담당
   handleLogout: async function () {
-
+    this.removeWallet();
+    location.reload();  // 페이지 새로고침
   },
 
   generateNumbers: async function () {
@@ -90,20 +101,35 @@ const App = {
     return isValidKeystore;
   },
 
+  // privateKey를 이용해 wallet 인스턴스 가져오기
   integrateWallet: function (privateKey) {
-
+    const walletInstance = cav.klay.accounts.privateKeyToAccount(privateKey); // 계정 정보 인스턴스 가져오기
+    cav.klay.accounts.wallet.add(walletInstance); // Caver 인스턴스에 계정 정보 추가 -> 앞으로 트랜젝션 발생 시 쉽게 불러와 트랜젝션 처리 가능
+    sessionStorage.setItem('walletInstance', JSON.stringify(walletInstance)); // 세션 스토리지 설정 / 세션 스토리지: 탭 또는 웹 페이지가 꺼지기 전까지 사용 가능한 웹 브라우저 내 저장공간
+    this.changeUI(walletInstance);
   },
 
+  // 전역 변수 초기화
   reset: function () {
-
+    this.auth = {
+      keystore: '',
+      password: ''
+    };
   },
 
+  // UI 변경
   changeUI: async function (walletInstance) {
-
+    $('#loginModal').modal('hide'); // 모달 닫기
+    $('#login').hide();  // 로그인 버튼 없애기
+    $('#logout').show();  // 로그아웃 버튼 보이기
+    $('#address').append('<br><p>내 계정 주소:' + walletInstance.address + '</p>'); // 계정 주소 보여주기
   },
 
+  // 월렛, 세션 스토리지 클리어
   removeWallet: function () {
-
+    cav.klay.accounts.wallet.clear();
+    sessionStorage.removeItem('walletInstance');
+    this.reset();
   },
 
   showTimer: function () {
