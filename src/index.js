@@ -7,8 +7,17 @@ const config = {
   rpcURL: 'https://api.baobab.klaytn.net:8651'
 }
 
-// Bapp에서 사용할 수 있도록 rpcURL을 Caver 생성자에 넘겨 인스턴스화
+// Dapp에서 사용할 수 있도록 rpcURL을 Caver 생성자에 넘겨 인스턴스화
 const cav = new Caver(config.rpcURL);
+
+// 배포한 컨트랙트에 접근할 수 있도록 인스턴스 생성
+// 배포한 컨트랙트의 ABI 정보와 주소 필요
+/* 
+  DEPLOYED_ABI, DEPLOYED_ADDRESS
+  - Dapp 내부에서 사용할 수 있는 전역 상수들 
+  - 생성한 deployedABI, deployedAddress 파일을 읽어서 webpack에서 자동으로 세팅해줌 (webpack.config.js 파일 참조)
+*/
+const agContract = new cav.klay.Contract(DEPLOYED_ABI, DEPLOYED_ADDRESS);
 
 const App = {
   // 전역 변수: 접근방법 지정, keystore 전체 내용 및 비밀번호 저장
@@ -83,20 +92,50 @@ const App = {
 
   },
 
+  // 배포한 계정(owner 계정)으로 컨트랙트로 KLAY 송금
   deposit: async function () {
-
+    const walletInstance = this.getWallet();  // 현재 로그인된 계정 정보 불러오기
+    if (walletInstance) {
+      // 로그인된 계정이 owner 계정인지 확인
+      if (await this.callOwner() !== walletInstance.address) return;
+      else {
+        var amount = $('#amount').val();
+        if (amount) {
+          // 컨트랙트 인스턴스를 사용해 deposit 함수를 불러 KLAY를 보냄
+          agContract.methods.deposit().send({
+            from: walletInstance.address,
+            gas: '250000',
+            value: cav.utils.toPeb(amount, "KLAY")
+          })
+          .once('transactionHash', (txHash) => {
+            console.log(`txHash: ${txHash}`);
+          })
+          .once('receipt', (receipt) => {
+            console.log(`(#${receipt.blockNumber}) `, receipt);
+          })
+          .once('error', (error) => {
+            alert(error.message);
+          });
+        }
+        return ;
+      }
+    }
   },
 
+  // 컨트랙트의 owner 상태 변수 값 불러오기
   callOwner: async function () {
-
+    return await agContract.methods.owner().call();
   },
 
   callContractBalance: async function () {
 
   },
 
+  // Caver 월렛에 존재하는 현재 게정 정보 가져오기
   getWallet: function () {
-
+    if (cav.klay.accounts.wallet.length) {
+      return cav.klay.accounts.wallet[0];
+    }
   },
 
   // keystore 파일 유효성 검사
