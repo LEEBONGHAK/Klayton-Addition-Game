@@ -18,8 +18,17 @@ const App = {
     password: ''
   },
 
+  // sessionStorage에 저장된 계정 정보를 불러와 계정인증 상태 유지
   start: async function () {
-
+    const walletFromSession = sessionStorage.getItem('walletInstance'); // walletInstance(계정정보) 가져오기
+    if (walletFromSession) {
+      try {
+        cav.klay.accounts.wallet.add(JSON.parse(walletFromSession));
+        this.changeUI(JSON.parse(walletFromSession));
+      } catch (e) {
+        sessionStorage.removeItem('walletInstance');
+      }
+    }
   },
 
   // 유효한 keystore 파일인지 확인 및 내용 가져오기
