@@ -88,7 +88,15 @@ const App = {
   },
 
   generateNumbers: async function () {
+    var num1 = Math.floor((Math.random() * 50) + 10);  // 10 ~ 59
+    var num2 = Math.floor((Math.random() * 50) + 10);  // 10 ~ 59
+    sessionStorage.setItem('result', num1 + num2);  // 세션 스토리지에 정답 저장 (정답 확인용)
 
+    $('#start').hide();
+    $('#num1').text(num1);
+    $('#num2').text(num2);
+    $('#question').show();
+    document.querySelector('#answer').focus();
   },
 
   submitAnswer: async function () {
@@ -179,6 +187,7 @@ const App = {
     $('#loginModal').modal('hide'); // 모달 닫기
     $('#login').hide();  // 로그인 버튼 없애기
     $('#logout').show();  // 로그아웃 버튼 보이기
+    $('#game').show();  // 게임 시작 버튼 보이기
     $('#address').append('<br><p>내 계정 주소: ' + walletInstance.address + '</p>'); // 계정 주소 보여주기
     $('#contractBalance').append('<p>이벤트 잔액: ' + cav.utils.fromPeb(await this.callContractBalance(), "KLAY") + 'KLAY</p>'); // 컨트랙트 balance 보여주기
     

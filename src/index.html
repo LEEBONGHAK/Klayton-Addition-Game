@@ -46,6 +46,25 @@
     
     <br />
 
+    <div class="row text-center">
+      <div id="game" style="display: none;">
+        <div class="yellow-box" id="start">
+          <a href="#" onclick="App.generateNumbers()">시작</a>
+        </div>
+        <div class="yellow-box" id="question" style="display: none;">
+          <span id="num1"></span> + <span id="num2"></span> = ?
+          <div class="input-group">
+            <input type="number" class="form-control" id="answer" />
+            <span class="input-group-btn">
+              <button types="button" class="btn btn-default" onclick="App.submitAnswer()">제출</button>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <br />
+
     <div id="spin"></div>
 
     <div class="row text-center">
